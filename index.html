@@ -1525,34 +1525,31 @@ function initMensalSelects(){
   });
 }
 
-    function renderMensal(){
-      const mesVal = el("m_mes").value;  // "" = todos
-const anoVal = el("m_ano").value;  // "" = todos
-const mes = mesVal ? Number(mesVal) : null;
-const ano = anoVal ? Number(anoVal) : null;
-const filtro = el("m_filtro").value;
+function initMensalSelects(){
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-const itens = [];
-DB.forEach(c=>{
-  (c.parcelas||[]).forEach(p=>{
-    const d = parseISO(p.vencimento);
-    if(!d) return;
+  // MÊS: agora tem "Todos os meses"
+  el("m_mes").innerHTML =
+    `<option value="">Todos os meses</option>` +
+    meses.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
 
-    // ✅ Só filtra se mês/ano foram escolhidos
-    if(mes && (d.getMonth()+1)!==mes) return;
-    if(ano && d.getFullYear()!==ano) return;
+  // ANO: agora tem "Todos os anos"
+  const anoAtual = new Date().getFullYear();
+  const anos = [];
+  for(let y = anoAtual - 3; y <= anoAtual + 3; y++) anos.push(y);
 
-    const overdue = isOverdue(p);
-    const aberto = (p.status!=="PAGO");
-    const pago = (p.status==="PAGO");
+  el("m_ano").innerHTML =
+    `<option value="">Todos os anos</option>` +
+    anos.map(y=>`<option value="${y}">${y}</option>`).join("");
 
-    if(filtro==="abertos" && !aberto) return;
-    if(filtro==="pagos" && !pago) return;
-    if(filtro==="vencidos" && !overdue) return;
+  // padrão: mês e ano atuais
+  el("m_mes").value = (new Date().getMonth()+1);
+  el("m_ano").value = anoAtual;
 
-    itens.push({ c, p, overdue });
+  ["m_mes","m_ano","m_filtro"].forEach(id=>{
+    el(id).addEventListener("change", ()=>renderMensal());
   });
-});
+}
 
       const totalMes = itens.reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
       const abertoMes = itens.filter(x=>x.p.status!=="PAGO" && !x.overdue).reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
@@ -1684,6 +1681,7 @@ DB.forEach(c=>{
   </script>
 </body>
 </html>
+
 
 
 
