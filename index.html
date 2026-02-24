@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PB • Controle de Recebimentos</title>
+
+  <style>
+    :root{
+      --navy:#0A3D5A;
+      --teal:#2F97B3;
+      --orange:#F47A20;
+      --bg:#F5F7FA;
+      --card:#FFFFFF;
+      --text:#0F172A;
+      --muted:#64748B;
+      --line:#E6ECF2;
+      --danger:#D92D20;
+      --warn:#F59E0B;
+      --ok:#16A34A;
+      --shadow: 0 8px 24px rgba(10,61,90,.10);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .topbar{
+      background: linear-gradient(90deg, var(--navy), #073146);
+      color:#fff;
+      padding: 18px 20px;
+      position: sticky;
+      top:0;
+      z-index: 10;
+      box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+    .topbar-inner{
+      max-width: 1180px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; min-width: 260px; }
+    .brand img{ height:44px; width:auto; border-radius: 10px; }
+    .brand .t1{ font-weight:900; letter-spacing:.2px; line-height:1.1; font-size: 16px; }
+    .brand .t2{ font-size: 12px; opacity:.85; }
+
+    .tabs{ margin-left:auto; display:flex; gap:10px; flex-wrap: wrap; justify-content: flex-end; }
+    .tab-btn{
+      border:1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      padding:10px 14px;
+      border-radius: 999px;
+      cursor:pointer;
+      font-weight:800;
+      transition: .15s ease;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space: nowrap;
+    }
+    .tab-btn:hover{ background: rgba(255,255,255,.12); }
+    .tab-btn.active{ background:#fff; color: var(--navy); border-color:#fff; }
+    .dot{ width:8px;height:8px;border-radius:50%; background: var(--orange); }
+
+    .wrap{ max-width: 1180px; margin: 18px auto 50px; padding: 0 16px; }
+
+    .banner{
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      border:1px solid var(--line);
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom: 14px;
+    }
+    .banner .icon{
+      width:40px;height:40px;border-radius: 12px;
+      display:grid;place-items:center;
+      background: rgba(245,158,11,.15);
+      color: var(--warn);
+      font-weight:900;
+    }
+    .banner strong{ display:block; margin-bottom:3px;}
+    .banner .muted{ color:var(--muted); font-size:13px; line-height:1.35; }
+
+    .grid{ display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns:1fr; }
+      .brand{ min-width: unset; }
+      .tabs{ margin-left:0; }
+    }
+
+    .card{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .card h2{ margin:0 0 10px; font-size: 16px; letter-spacing:.2px; }
+    .sub{ color: var(--muted); font-size: 13px; margin-top:-6px; margin-bottom: 10px; }
+
+    .row{ display:flex; gap:10px; flex-wrap: wrap; }
+    .field{ flex:1; min-width: 180px; }
+    label{ display:block; font-size: 12px; color: var(--muted); margin: 6px 0 6px; }
+
+    input, select, textarea{
+      width:100%;
+      padding: 10px 12px;
+      border:1px solid var(--line);
+      border-radius: 12px;
+      outline: none;
+      background:#fff;
+      font-size: 14px;
+    }
+    textarea{ resize: vertical; min-height: 38px; }
+
+    .actions{ display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; }
+
+    .btn{
+      border:0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight:900;
+      transition:.15s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space: nowrap;
+    }
+    .btn-primary{ background: var(--navy); color:#fff; }
+    .btn-primary:hover{ filter: brightness(1.05); }
+    .btn-accent{ background: var(--orange); color:#fff; }
+    .btn-accent:hover{ filter: brightness(1.05); }
+    .btn-ghost{ background: #fff; border:1px solid var(--line); color: var(--navy); }
+    .btn-ghost:hover{ background:#F8FAFC; }
+    .btn-danger{ background: var(--danger); color:#fff; }
+    .btn-ok{ background: var(--ok); color:#fff; }
+    .btn-mini{ padding: 7px 10px; border-radius: 10px; font-size: 13px; font-weight:900; }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight:900;
+      border:1px solid var(--line);
+      color: var(--navy);
+      background: #fff;
+    }
+    .pill .b{ width:8px;height:8px;border-radius:50%; background: var(--teal); }
+    .pill.warn .b{ background: var(--warn); }
+    .pill.danger .b{ background: var(--danger); }
+    .pill.ok .b{ background: var(--ok); }
+
+    table{ width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td{
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align:left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th{
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .right{ text-align:right; }
+    .muted{ color: var(--muted); }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px){
+      .kpis{ grid-template-columns: 1fr 1fr; }
+    }
+    .kpi{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+    .kpi .t{ font-size: 12px; color: var(--muted); }
+    .kpi .v{ font-size: 18px; font-weight: 900; margin-top: 4px; color: var(--navy); }
+
+    .client-card{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: #fff;
+      margin-top: 10px;
+    }
+    .client-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap:10px;
+    }
+    .client-name{
+      font-weight: 900;
+      color: var(--navy);
+      font-size: 14px;
+      line-height: 1.25;
+    }
+    .client-meta{
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .client-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items:flex-start;
+    }
+
+    .badge-overdue{
+      display:inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(217,45,32,.12);
+      color: var(--danger);
+      border: 1px solid rgba(217,45,32,.25);
+    }
+    tr.overdue{ background: rgba(217,45,32,.06); }
+
+    .footer-note{ margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+    .inline input, .inline select{
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    .sort{
+      display:inline-flex;
+      gap:6px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .sort button{
+      border:1px solid var(--line);
+      background:#fff;
+      color: var(--navy);
+      font-weight:900;
+      border-radius: 8px;
+      padding: 3px 7px;
+      cursor:pointer;
+    }
+    .sort button.active{
+      background: rgba(10,61,90,.08);
+      border-color: rgba(10,61,90,.22);
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="paula-berbigier-simbolo-logo-02.png" alt="Paula Berbigier" />
+        <div>
+          <div class="t1">Controle de Recebimentos</div>
+          <div class="t2">Paula Berbigier • Advocacia Previdenciária</div>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="cadastro"><span class="dot"></span>Cadastro</button>
+        <button class="tab-btn" data-tab="dashboard"><span class="dot"></span>Totais por cliente</button>
+        <button class="tab-btn" data-tab="mensal"><span class="dot"></span>Visão mensal</button>
+        <button class="tab-btn" data-tab="exportar"><span class="dot"></span>Exportar</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="alertBanner" style="display:none;" class="banner">
+      <div class="icon">!</div>
+      <div>
+        <strong id="alertTitle">Atenção</strong>
+        <div class="muted" id="alertText"></div>
+      </div>
+    </div>
+
+    <!-- CADASTRO -->
+    <section id="cadastro" class="tab">
+      <div class="grid">
+        <div class="card">
+          <h2>Novo cliente / protocolo</h2>
+          <div class="sub">Cadastre quando você protocolar a ação.</div>
+
+          <div class="row">
+            <div class="field">
+              <label>Cliente</label>
+              <input id="c_nome" placeholder="Ex.: Maria Silva" />
+            </div>
+            <div class="field">
+              <label>Escritório parceiro</label>
+              <input id="c_parceiro" placeholder="Ex.: Fulano Advocacia" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Número do processo</label>
+              <input id="c_processo" placeholder="0000000-00.0000.0.00.0000" />
+            </div>
+            <div class="field">
+              <label>Data do protocolo</label>
+              <input id="c_protocolo" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Observação da ação</label>
+              <textarea id="c_obs" placeholder="Ex.: JEF NH, aposentadoria, detalhes relevantes..."></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" id="btnAddCliente">Salvar cliente</button>
+            <button class="btn btn-ghost" id="btnLimparClientes">Limpar campos</button>
+          </div>
+
+          <div class="footer-note">
+            Os dados ficam salvos no seu computador (neste navegador). Para trocar de PC, use “Exportar”.
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Parcelamento (gerar completo)</h2>
+          <div class="sub">Gere automaticamente 1 de X até X de X com vencimentos por intervalo.</div>
+
+          <div class="row">
+            <div class="field">
+              <label>Cliente</label>
+              <select id="p_cliente"></select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field" style="max-width:260px;">
+              <label>Modo</label>
+              <select id="p_modo">
+                <option value="completo">Gerar parcelamento completo</option>
+                <option value="unica">Adicionar somente 1 parcela</option>
+              </select>
+            </div>
+
+            <div class="field" style="max-width:260px;">
+              <label>Intervalo</label>
+              <select id="p_intervalo">
+                <option value="mensal">Mensal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="semanal">Semanal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Total de parcelas (X)</label>
+              <input id="p_total" type="number" min="1" step="1" placeholder="Ex.: 6" />
+            </div>
+            <div class="field">
+              <label>Primeiro vencimento</label>
+              <input id="p_venc" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Valor (R$) — por parcela</label>
+              <input id="p_valor" type="number" step="0.01" placeholder="Ex.: 897,00" />
+            </div>
+            <div class="field">
+              <label>Observação (opcional)</label>
+              <input id="p_obs" placeholder="Ex.: acordo, complemento, etc." />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-accent" id="btnGerarParcelamento">Gerar parcelamento</button>
+            <button class="btn btn-ghost" id="btnLimparParcela">Limpar campos</button>
+          </div>
+
+          <div class="footer-note">
+            Em “Gerar completo”, o sistema cria automaticamente <strong>1 de X</strong> até <strong>X de X</strong>.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h2>Clientes cadastrados</h2>
+        <div class="sub">Edita inline. Parcelas vencidas aparecem destacadas.</div>
+
+        <div class="row">
+          <div class="field" style="flex:2; min-width: 260px;">
+            <label>Buscar</label>
+            <input id="busca" placeholder="Nome, parceiro ou processo..." />
+          </div>
+          <div class="field" style="min-width: 220px;">
+            <label>Filtro</label>
+            <select id="filtro">
+              <option value="todos">Todos</option>
+              <option value="comVencidos">Com parcelas vencidas</option>
+              <option value="comAbertos">Com parcelas em aberto</option>
+              <option value="soPagos">Somente pagos</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="clientesLista"></div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="tab" style="display:none;">
+      <div class="card">
+        <h2>Totais por cliente</h2>
+        <div class="sub">Consolidado financeiro (Pago / Em aberto / Vencido).</div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="t">Total pago</div><div class="v" id="kpiPago">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Total em aberto</div><div class="v" id="kpiAberto">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Total vencido</div><div class="v" id="kpiVencido">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Saldo esperado (aberto + vencido)</div><div class="v" id="kpiEsperado">R$ 0,00</div></div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="field" style="flex:2; min-width: 260px;">
+            <label>Buscar cliente</label>
+            <input id="dashBusca" placeholder="Ex.: Edmundo / Claudia / nº processo..." />
+          </div>
+        </div>
+
+        <div id="dashLista"></div>
+      </div>
+    </section>
+
+    <!-- MENSAL -->
+    <section id="mensal" class="tab" style="display:none;">
+      <div class="card">
+        <h2>Visão mensal</h2>
+        <div class="sub">Lista parcelas do mês (por vencimento) e totaliza.</div>
+
+        <div class="row">
+          <div class="field" style="max-width:240px;">
+            <label>Mês</label>
+            <select id="m_mes"></select>
+          </div>
+          <div class="field" style="max-width:240px;">
+            <label>Ano</label>
+            <select id="m_ano"></select>
+          </div>
+          <div class="field" style="max-width:260px;">
+            <label>Mostrar</label>
+            <select id="m_filtro">
+              <option value="todos">Todos</option>
+              <option value="abertos">Somente em aberto</option>
+              <option value="pagos">Somente pagos</option>
+              <option value="vencidos">Somente vencidos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="kpis" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="kpi"><div class="t">Total do mês</div><div class="v" id="m_total">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Em aberto (mês)</div><div class="v" id="m_aberto">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Vencido (mês)</div><div class="v" id="m_vencido">R$ 0,00</div></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Parceiro</th>
+              <th>Processo</th>
+              <th>Parcela</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th class="right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="mensalTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EXPORTAR -->
+    <section id="exportar" class="tab" style="display:none;">
+      <div class="card">
+        <h2>Exportar</h2>
+        <div class="sub">CSV abre no Excel. JSON é backup completo.</div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="btnExportCSV">Exportar CSV (Excel)</button>
+          <button class="btn btn-ghost" id="btnBackupJSON">Baixar backup (JSON)</button>
+        </div>
+
+        <div class="footer-note">
+          CSV inclui campos tabulados: <strong>PARCELA_N</strong>, <strong>PARCELA_TOTAL</strong>, <strong>PARCELA</strong> (“n de X”).
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--line); margin:14px 0;">
+
+        <h2>Importar backup (JSON)</h2>
+        <div class="sub">Para restaurar em outro computador.</div>
+        <input id="importFile" type="file" accept=".json" />
+        <div class="actions">
+          <button class="btn btn-accent" id="btnImportJSON">Importar JSON</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ==========================================
+    // STORAGE
+    // ==========================================
+    const STORAGE_KEY = "pb_recebimentos_v4";
+
+    function loadDB(){
+      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+      catch(e){ return []; }
+    }
+    function saveDB(data){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // ==========================================
+    // UTILS
+    // ==========================================
+    const el = (id)=>document.getElementById(id);
+    const todayISO = ()=> new Date().toISOString().slice(0,10);
+
+    function brl(n){
+      return (Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+    }
+    function parseISO(d){
+      const [y,m,dd] = (d||"").split("-").map(Number);
+      if(!y || !m || !dd) return null;
+      return new Date(y, m-1, dd, 12, 0, 0);
+    }
+    function isOverdue(p){
+      if(p.status === "PAGO") return false;
+      const dv = parseISO(p.vencimento);
+      if(!dv) return false;
+      return dv < parseISO(todayISO());
+    }
+    function sumParcelas(parcelas, predicate){
+      return (parcelas||[]).filter(predicate).reduce((acc,p)=>acc + (Number(p.valor)||0),0);
+    }
+    function escapeHtml(str){
+      return String(str||"")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+    function downloadBlob(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function clienteMatches(c, q){
+      if(!q) return true;
+      const hay = `${c.nome||""} ${c.parceiro||""} ${c.processo||""}`.toLowerCase();
+      return hay.includes(q);
+    }
+
+    function getClienteStatusInfo(c){
+      const pago = sumParcelas(c.parcelas, p=>p.status==="PAGO");
+      const vencido = sumParcelas(c.parcelas, p=>isOverdue(p));
+      const aberto = sumParcelas(c.parcelas, p=>p.status!=="PAGO" && !isOverdue(p));
+      const esperado = aberto + vencido;
+      const qtdVencidas = (c.parcelas||[]).filter(p=>isOverdue(p)).length;
+      const qtdAbertas = (c.parcelas||[]).filter(p=>p.status!=="PAGO").length;
+      return { pago, vencido, aberto, esperado, qtdVencidas, qtdAbertas };
+    }
+
+    // ==========================================
+    // UI STATE
+    // ==========================================
+    const uiState = {
+      parcelaSort: {}, // { [clienteId]: { dir: "asc"|"desc" } }
+      editClient: new Set(),
+      editParcela: new Set()
+    };
+
+    function setSortParcelas(clienteId, dir){
+      uiState.parcelaSort[clienteId] = { dir };
+      renderAll();
+    }
+    window.setSortParcelas = setSortParcelas;
+
+    function sortParcelas(clienteId, parcelas){
+      const dir = uiState.parcelaSort[clienteId]?.dir || "asc";
+      const arr = [...(parcelas||[])];
+      arr.sort((a,b)=>{
+        const da = a.vencimento || "";
+        const db = b.vencimento || "";
+        return dir === "asc" ? da.localeCompare(db) : db.localeCompare(da);
+      });
+      return arr;
+    }
+
+    // ==========================================
+    // TABS
+    // ==========================================
+    document.querySelectorAll(".tab-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        document.querySelectorAll(".tab").forEach(sec=>sec.style.display="none");
+        el(btn.dataset.tab).style.display="block";
+        renderAll();
+      });
+    });
+
+    // ==========================================
+    // CLIENTE: ADD / EDIT INLINE / DELETE
+    // ==========================================
+    function limparClienteForm(){
+      ["c_nome","c_parceiro","c_processo","c_protocolo","c_obs"].forEach(id=>el(id).value="");
+    }
+    el("btnLimparClientes").addEventListener("click", limparClienteForm);
+
+    el("btnAddCliente").addEventListener("click", ()=>{
+      const nome = el("c_nome").value.trim();
+      if(!nome) return alert("Informe o nome do cliente.");
+      const cliente = {
+        id: crypto.randomUUID(),
+        nome,
+        parceiro: el("c_parceiro").value.trim(),
+        processo: el("c_processo").value.trim(),
+        protocolo: el("c_protocolo").value,
+        obs: el("c_obs").value.trim(),
+        createdAt: new Date().toISOString(),
+        totalParcelas: null,
+        parcelas: []
+      };
+      const db = loadDB();
+      db.unshift(cliente);
+      saveDB(db);
+      limparClienteForm();
+      renderAll();
+    });
+
+    function toggleEditCliente(clienteId, on){
+      if(on) uiState.editClient.add(clienteId);
+      else uiState.editClient.delete(clienteId);
+      renderAll();
+    }
+    window.toggleEditCliente = toggleEditCliente;
+
+    function saveEditCliente(clienteId){
+      const db = loadDB();
+      const c = db.find(x=>x.id===clienteId);
+      if(!c) return;
+
+      const nome = el(`ec_nome_${clienteId}`).value.trim();
+      if(!nome) return alert("Nome do cliente não pode ficar vazio.");
+
+      c.nome = nome;
+      c.parceiro = el(`ec_parceiro_${clienteId}`).value.trim();
+      c.processo = el(`ec_processo_${clienteId}`).value.trim();
+      c.protocolo = el(`ec_protocolo_${clienteId}`).value;
+      c.obs = el(`ec_obs_${clienteId}`).value.trim();
+
+      saveDB(db);
+      uiState.editClient.delete(clienteId);
+      renderAll();
+    }
+    window.saveEditCliente = saveEditCliente;
+
+    function excluirCliente(clienteId){
+      if(!confirm("Excluir cliente e todas as parcelas?")) return;
+      const db = loadDB().filter(c=>c.id!==clienteId);
+      saveDB(db);
+      uiState.editClient.delete(clienteId);
+      renderAll();
+    }
+    window.excluirCliente = excluirCliente;
+
+    // ==========================================
+    // PARCELAS: GERAR COMPLETO / EDIT INLINE / DELETE
+    // ==========================================
+    function limparParcelaForm(){
+      ["p_total","p_venc","p_valor","p_obs"].forEach(id=>el(id).value="");
+      el("p_modo").value = "completo";
+      el("p_intervalo").value = "mensal";
+    }
+    el("btnLimparParcela").addEventListener("click", limparParcelaForm);
+
+    function addByInterval(dateISO, step, intervalo){
+      const d = parseISO(dateISO);
+      if(!d) return dateISO;
+      const out = new Date(d);
+      if(intervalo === "mensal"){
+        out.setMonth(out.getMonth() + step);
+      }else if(intervalo === "quinzenal"){
+        out.setDate(out.getDate() + (14 * step));
+      }else{
+        out.setDate(out.getDate() + (7 * step));
+      }
+      return out.toISOString().slice(0,10);
+    }
+
+    el("btnGerarParcelamento").addEventListener("click", ()=>{
+      const clienteId = el("p_cliente").value;
+      if(!clienteId) return alert("Selecione um cliente.");
+
+      const modo = el("p_modo").value; // completo | unica
+      const intervalo = el("p_intervalo").value; // mensal | quinzenal | semanal
+
+      const total = Number(el("p_total").value);
+      const venc0 = el("p_venc").value;
+      const valor = Number(el("p_valor").value);
+      const obs = el("p_obs").value.trim();
+
+      if(!total || total < 1) return alert("Informe o total de parcelas (X).");
+      if(!venc0) return alert("Informe o primeiro vencimento.");
+      if(!valor || valor <= 0) return alert("Informe um valor válido.");
+
+      const db = loadDB();
+      const c = db.find(x=>x.id===clienteId);
+      if(!c) return alert("Cliente não encontrado.");
+
+      c.totalParcelas = total;
+
+      // se já existirem parcelas, continua a numeração
+      const numerosExistentes = (c.parcelas||[])
+        .map(p=>Number(p.numero)||0)
+        .filter(n=>n>0);
+
+      const startNumero = numerosExistentes.length ? Math.max(...numerosExistentes) + 1 : 1;
+
+      if(modo === "unica"){
+        const numero = startNumero;
+        c.parcelas.push({
+          id: crypto.randomUUID(),
+          numero,
+          total,
+          label: `${numero} de ${total}`,
+          vencimento: venc0,
+          valor,
+          status: "EM ABERTO",
+          pagamento: "",
+          obs
+        });
+      }else{
+        // gera do startNumero até total
+        for(let i = startNumero; i <= total; i++){
+          const step = (i - startNumero);
+          const venc = addByInterval(venc0, step, intervalo);
+          c.parcelas.push({
+            id: crypto.randomUUID(),
+            numero: i,
+            total,
+            label: `${i} de ${total}`,
+            vencimento: venc,
+            valor,
+            status: "EM ABERTO",
+            pagamento: "",
+            obs
+          });
+        }
+      }
+
+      saveDB(db);
+      limparParcelaForm();
+      renderAll();
+    });
+
+    function toggleEditParcela(parcelaId, on){
+      if(on) uiState.editParcela.add(parcelaId);
+      else uiState.editParcela.delete(parcelaId);
+      renderAll();
+    }
+    window.toggleEditParcela = toggleEditParcela;
+
+    function saveEditParcela(clienteId, parcelaId){
+      const db = loadDB();
+      const c = db.find(x=>x.id===clienteId);
+      if(!c) return;
+      const p = (c.parcelas||[]).find(x=>x.id===parcelaId);
+      if(!p) return;
+
+      const numero = Number(el(`ep_num_${parcelaId}`).value);
+      const total = Number(el(`ep_tot_${parcelaId}`).value);
+      const venc = el(`ep_venc_${parcelaId}`).value;
+      const valor = Number(el(`ep_val_${parcelaId}`).value);
+      const status = el(`ep_status_${parcelaId}`).value;
+      let pag = el(`ep_pag_${parcelaId}`).value;
+      const obs = el(`ep_obs_${parcelaId}`).value.trim();
+
+      if(!total || total < 1) return alert("Total de parcelas inválido.");
+      if(!numero || numero < 1) return alert("Número da parcela inválido.");
+      if(numero > total) return alert("Número da parcela não pode ser maior que o total.");
+      if(!venc) return alert("Vencimento obrigatório.");
+      if(!valor || valor <= 0) return alert("Valor inválido.");
+
+      if(status === "PAGO" && !pag) pag = todayISO();
+      if(status !== "PAGO") pag = "";
+
+      p.numero = numero;
+      p.total = total;
+      p.label = `${numero} de ${total}`;
+      p.vencimento = venc;
+      p.valor = valor;
+      p.status = status;
+      p.pagamento = pag;
+      p.obs = obs;
+
+      c.totalParcelas = total;
+
+      saveDB(db);
+      uiState.editParcela.delete(parcelaId);
+      renderAll();
+    }
+    window.saveEditParcela = saveEditParcela;
+
+    function excluirParcela(clienteId, parcelaId){
+      if(!confirm("Excluir esta parcela?")) return;
+      const db = loadDB();
+      const c = db.find(x=>x.id===clienteId);
+      if(!c) return;
+      c.parcelas = (c.parcelas||[]).filter(p=>p.id!==parcelaId);
+      saveDB(db);
+      uiState.editParcela.delete(parcelaId);
+      renderAll();
+    }
+    window.excluirParcela = excluirParcela;
+
+    function marcarPago(clienteId, parcelaId){
+      const db = loadDB();
+      const c = db.find(x=>x.id===clienteId);
+      if(!c) return;
+      const p = (c.parcelas||[]).find(x=>x.id===parcelaId);
+      if(!p) return;
+      p.status = "PAGO";
+      p.pagamento = todayISO();
+      saveDB(db);
+      renderAll();
+    }
+    window.marcarPago = marcarPago;
+
+    // ==========================================
+    // ALERTAS
+    // ==========================================
+    function renderAlertas(){
+      const db = loadDB();
+      let vencidas = 0, totalVencido = 0;
+      db.forEach(c=>{
+        (c.parcelas||[]).forEach(p=>{
+          if(isOverdue(p)){ vencidas++; totalVencido += Number(p.valor)||0; }
+        });
+      });
+
+      if(vencidas>0){
+        el("alertBanner").style.display="flex";
+        el("alertTitle").textContent = `Você tem ${vencidas} parcela(s) vencida(s)`;
+        el("alertText").textContent = `Total vencido: ${brl(totalVencido)}.`;
+      }else{
+        el("alertBanner").style.display="none";
+      }
+    }
+
+    // ==========================================
+    // SELECT CLIENTES
+    // ==========================================
+    function refreshClienteSelect(){
+      const db = loadDB();
+      const sel = el("p_cliente");
+      sel.innerHTML = `<option value="">Selecione...</option>` + db.map(c=>{
+        const label = `${c.nome}${c.processo ? " — " + c.processo : ""}`;
+        return `<option value="${c.id}">${escapeHtml(label)}</option>`;
+      }).join("");
+    }
+
+    // ==========================================
+    // FILTROS / BUSCAS
+    // ==========================================
+    el("busca").addEventListener("input", ()=>renderClientesLista());
+    el("filtro").addEventListener("change", ()=>renderClientesLista());
+    el("dashBusca").addEventListener("input", ()=>renderDashboardLista());
+
+    // ==========================================
+    // CLIENTES LISTA
+    // ==========================================
+    function renderClientesLista(){
+      const db = loadDB();
+      const q = (el("busca").value||"").trim().toLowerCase();
+      const filtro = el("filtro").value;
+
+      const lista = db
+        .filter(c=>clienteMatches(c,q))
+        .filter(c=>{
+          const info = getClienteStatusInfo(c);
+          if(filtro==="todos") return true;
+          if(filtro==="comVencidos") return info.qtdVencidas > 0;
+          if(filtro==="comAbertos") return info.qtdAbertas > 0;
+          if(filtro==="soPagos") return (c.parcelas||[]).length>0 && info.qtdAbertas===0;
+          return true;
+        });
+
+      el("clientesLista").innerHTML = lista.map(c=>{
+        const info = getClienteStatusInfo(c);
+        const badge = info.qtdVencidas>0 ? `<span class="badge-overdue">${info.qtdVencidas} vencida(s)</span>` : "";
+
+        const pill = info.qtdVencidas > 0
+          ? `<span class="pill danger"><span class="b"></span>Vencido: ${brl(info.vencido)}</span>`
+          : info.qtdAbertas > 0
+            ? `<span class="pill warn"><span class="b"></span>Em aberto: ${brl(info.esperado)}</span>`
+            : `<span class="pill ok"><span class="b"></span>Em dia</span>`;
+
+        const isEditing = uiState.editClient.has(c.id);
+        const parcelasSorted = sortParcelas(c.id, c.parcelas);
+        const dir = uiState.parcelaSort[c.id]?.dir || "asc";
+
+        const clientBlock = isEditing ? `
+          <div class="inline">
+            <div class="row">
+              <div class="field">
+                <label>Cliente</label>
+                <input id="ec_nome_${c.id}" value="${escapeHtml(c.nome)}" />
+              </div>
+              <div class="field">
+                <label>Escritório parceiro</label>
+                <input id="ec_parceiro_${c.id}" value="${escapeHtml(c.parceiro||"")}" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Número do processo</label>
+                <input id="ec_processo_${c.id}" value="${escapeHtml(c.processo||"")}" />
+              </div>
+              <div class="field">
+                <label>Data do protocolo</label>
+                <input id="ec_protocolo_${c.id}" type="date" value="${escapeHtml(c.protocolo||"")}" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Observação da ação</label>
+                <input id="ec_obs_${c.id}" value="${escapeHtml(c.obs||"")}" />
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="client-name">${escapeHtml(c.nome)}${badge}</div>
+          <div class="client-meta">
+            <div><strong>Parceiro:</strong> ${escapeHtml(c.parceiro||"-")}</div>
+            <div><strong>Processo:</strong> ${escapeHtml(c.processo||"-")}</div>
+            <div><strong>Protocolo:</strong> ${escapeHtml(c.protocolo||"-")}</div>
+            ${c.obs ? `<div><strong>Obs:</strong> ${escapeHtml(c.obs)}</div>` : ``}
+          </div>
+        `;
+
+        const actions = isEditing ? `
+          <button class="btn btn-primary btn-mini" onclick="saveEditCliente('${c.id}')">Salvar</button>
+          <button class="btn btn-ghost btn-mini" onclick="toggleEditCliente('${c.id}', false)">Cancelar</button>
+          <button class="btn btn-danger btn-mini" onclick="excluirCliente('${c.id}')">Excluir</button>
+        ` : `
+          ${pill}
+          <button class="btn btn-ghost btn-mini" onclick="toggleEditCliente('${c.id}', true)">Editar</button>
+          <button class="btn btn-danger btn-mini" onclick="excluirCliente('${c.id}')">Excluir</button>
+        `;
+
+        return `
+          <div class="client-card">
+            <div class="client-head">
+              <div style="flex:1;">${clientBlock}</div>
+              <div class="client-actions">${actions}</div>
+            </div>
+
+            <div class="kpis" style="grid-template-columns: repeat(4, 1fr); margin-top:10px;">
+              <div class="kpi"><div class="t">Pago</div><div class="v">${brl(info.pago)}</div></div>
+              <div class="kpi"><div class="t">Em aberto</div><div class="v">${brl(info.aberto)}</div></div>
+              <div class="kpi"><div class="t">Vencido</div><div class="v">${brl(info.vencido)}</div></div>
+              <div class="kpi"><div class="t">Total (tudo)</div><div class="v">${brl(info.pago + info.aberto + info.vencido)}</div></div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <div class="sub" style="margin:0;">
+                Parcelas
+                <span class="sort">
+                  <button class="${dir==="asc"?"active":""}" onclick="setSortParcelas('${c.id}','asc')">↑</button>
+                  <button class="${dir==="desc"?"active":""}" onclick="setSortParcelas('${c.id}','desc')">↓</button>
+                </span>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Parcela</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Pagamento</th>
+                    <th>Obs</th>
+                    <th class="right">Valor</th>
+                    <th class="right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${
+                    parcelasSorted.length
+                    ? parcelasSorted.map(p=>{
+                        const overdue = isOverdue(p);
+                        const isPEdit = uiState.editParcela.has(p.id);
+
+                        const statusPill = p.status==="PAGO"
+                          ? `<span class="pill ok"><span class="b"></span>PAGO</span>`
+                          : overdue
+                            ? `<span class="pill danger"><span class="b"></span>VENCIDO</span>`
+                            : `<span class="pill warn"><span class="b"></span>EM ABERTO</span>`;
+
+                        if(!isPEdit){
+                          return `
+                            <tr class="${overdue ? "overdue":""}">
+                              <td><strong>${escapeHtml(p.label || `${p.numero||""} de ${p.total||""}`)}</strong></td>
+                              <td>${escapeHtml(p.vencimento||"-")}</td>
+                              <td>${statusPill}</td>
+                              <td>${escapeHtml(p.pagamento||"-")}</td>
+                              <td class="muted">${escapeHtml(p.obs||"")}</td>
+                              <td class="right"><strong>${brl(p.valor)}</strong></td>
+                              <td class="right">
+                                <button class="btn btn-ghost btn-mini" onclick="toggleEditParcela('${p.id}', true)">Editar</button>
+                                ${p.status!=="PAGO" ? `<button class="btn btn-ok btn-mini" onclick="marcarPago('${c.id}','${p.id}')">Marcar pago</button>` : ``}
+                                <button class="btn btn-ghost btn-mini" onclick="excluirParcela('${c.id}','${p.id}')">Excluir</button>
+                              </td>
+                            </tr>
+                          `;
+                        }
+
+                        return `
+                          <tr class="${overdue ? "overdue":""}">
+                            <td class="inline">
+                              <div class="row" style="gap:6px;">
+                                <input id="ep_num_${p.id}" type="number" min="1" step="1" value="${Number(p.numero||1)}" style="max-width:90px;">
+                                <span class="muted" style="align-self:center; font-weight:900;">de</span>
+                                <input id="ep_tot_${p.id}" type="number" min="1" step="1" value="${Number(p.total||1)}" style="max-width:110px;">
+                              </div>
+                            </td>
+                            <td class="inline"><input id="ep_venc_${p.id}" type="date" value="${escapeHtml(p.vencimento||"")}" /></td>
+                            <td class="inline">
+                              <select id="ep_status_${p.id}">
+                                <option value="EM ABERTO">EM ABERTO</option>
+                                <option value="PAGO">PAGO</option>
+                              </select>
+                            </td>
+                            <td class="inline"><input id="ep_pag_${p.id}" type="date" value="${escapeHtml(p.pagamento||"")}" /></td>
+                            <td class="inline"><input id="ep_obs_${p.id}" value="${escapeHtml(p.obs||"")}" /></td>
+                            <td class="inline right"><input id="ep_val_${p.id}" type="number" step="0.01" value="${Number(p.valor||0)}" /></td>
+                            <td class="right">
+                              <button class="btn btn-primary btn-mini" onclick="saveEditParcela('${c.id}','${p.id}')">Salvar</button>
+                              <button class="btn btn-ghost btn-mini" onclick="toggleEditParcela('${p.id}', false)">Cancelar</button>
+                            </td>
+                          </tr>
+                        `;
+                      }).join("")
+                    : `<tr><td colspan="7" class="muted">Sem parcelas cadastradas.</td></tr>`
+                  }
+                </tbody>
+              </table>
+
+              <div class="footer-note">
+                Campo “Parcela” é tabulado (n e total). Exportação inclui PARCELA_N, PARCELA_TOTAL e PARCELA.
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
+
+      // pós-render: aplica o status nos selects editáveis
+      const db2 = loadDB();
+      db2.forEach(c=>{
+        (c.parcelas||[]).forEach(p=>{
+          if(uiState.editParcela.has(p.id)){
+            const s = el(`ep_status_${p.id}`);
+            if(s) s.value = p.status || "EM ABERTO";
+          }
+        });
+      });
+    }
+
+    // ==========================================
+    // DASHBOARD
+    // ==========================================
+    function renderDashboardKPIs(){
+      const db = loadDB();
+      let pago=0, aberto=0, vencido=0;
+      db.forEach(c=>{
+        const info = getClienteStatusInfo(c);
+        pago += info.pago;
+        aberto += info.aberto;
+        vencido += info.vencido;
+      });
+      el("kpiPago").textContent = brl(pago);
+      el("kpiAberto").textContent = brl(aberto);
+      el("kpiVencido").textContent = brl(vencido);
+      el("kpiEsperado").textContent = brl(aberto + vencido);
+    }
+
+    function renderDashboardLista(){
+      const db = loadDB();
+      const q = (el("dashBusca").value||"").trim().toLowerCase();
+
+      const lista = db
+        .filter(c=>clienteMatches(c,q))
+        .map(c=>{
+          const info = getClienteStatusInfo(c);
+          return { c, info, total: info.pago + info.aberto + info.vencido };
+        })
+        .sort((a,b)=> b.total - a.total);
+
+      el("dashLista").innerHTML = lista.map(({c,info,total})=>{
+        const tag = info.qtdVencidas>0
+          ? `<span class="pill danger"><span class="b"></span>${info.qtdVencidas} vencida(s)</span>`
+          : info.qtdAbertas>0
+            ? `<span class="pill warn"><span class="b"></span>${info.qtdAbertas} em aberto</span>`
+            : `<span class="pill ok"><span class="b"></span>Em dia</span>`;
+
+        return `
+          <div class="client-card">
+            <div class="client-head">
+              <div>
+                <div class="client-name">${escapeHtml(c.nome)}</div>
+                <div class="client-meta">
+                  <div><strong>Parceiro:</strong> ${escapeHtml(c.parceiro||"-")} • <strong>Processo:</strong> ${escapeHtml(c.processo||"-")}</div>
+                </div>
+              </div>
+              <div class="client-actions">${tag}</div>
+            </div>
+
+            <div class="kpis" style="grid-template-columns: repeat(4, 1fr); margin-top:10px;">
+              <div class="kpi"><div class="t">Pago</div><div class="v">${brl(info.pago)}</div></div>
+              <div class="kpi"><div class="t">Em aberto</div><div class="v">${brl(info.aberto)}</div></div>
+              <div class="kpi"><div class="t">Vencido</div><div class="v">${brl(info.vencido)}</div></div>
+              <div class="kpi"><div class="t">Total</div><div class="v">${brl(total)}</div></div>
+            </div>
+          </div>
+        `;
+      }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
+    }
+
+    // ==========================================
+    // VISÃO MENSAL
+    // ==========================================
+    function initMensalSelects(){
+      const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      el("m_mes").innerHTML = meses.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
+      const anoAtual = new Date().getFullYear();
+      const anos = [];
+      for(let y = anoAtual - 3; y <= anoAtual + 3; y++) anos.push(y);
+      el("m_ano").innerHTML = anos.map(y=>`<option value="${y}">${y}</option>`).join("");
+      el("m_mes").value = (new Date().getMonth()+1);
+      el("m_ano").value = anoAtual;
+
+      ["m_mes","m_ano","m_filtro"].forEach(id=>{
+        el(id).addEventListener("change", ()=>renderMensal());
+      });
+    }
+
+    function renderMensal(){
+      const db = loadDB();
+      const mes = Number(el("m_mes").value);
+      const ano = Number(el("m_ano").value);
+      const filtro = el("m_filtro").value;
+
+      const itens = [];
+      db.forEach(c=>{
+        (c.parcelas||[]).forEach(p=>{
+          const d = parseISO(p.vencimento);
+          if(!d) return;
+          if((d.getMonth()+1)!==mes || d.getFullYear()!==ano) return;
+
+          const overdue = isOverdue(p);
+          const aberto = (p.status!=="PAGO");
+          const pago = (p.status==="PAGO");
+
+          if(filtro==="abertos" && !aberto) return;
+          if(filtro==="pagos" && !pago) return;
+          if(filtro==="vencidos" && !overdue) return;
+
+          itens.push({ c, p, overdue });
+        });
+      });
+
+      const totalMes = itens.reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
+      const abertoMes = itens.filter(x=>x.p.status!=="PAGO" && !x.overdue).reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
+      const vencidoMes = itens.filter(x=>x.overdue).reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
+
+      el("m_total").textContent = brl(totalMes);
+      el("m_aberto").textContent = brl(abertoMes);
+      el("m_vencido").textContent = brl(vencidoMes);
+
+      const tbody = el("mensalTbody");
+      if(!itens.length){
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">Sem parcelas para este mês.</td></tr>`;
+        return;
+      }
+
+      itens.sort((a,b)=> (a.p.vencimento||"").localeCompare(b.p.vencimento||""));
+
+      tbody.innerHTML = itens.map(x=>{
+        const status = x.p.status==="PAGO"
+          ? `<span class="pill ok"><span class="b"></span>PAGO</span>`
+          : x.overdue
+            ? `<span class="pill danger"><span class="b"></span>VENCIDO</span>`
+            : `<span class="pill warn"><span class="b"></span>EM ABERTO</span>`;
+
+        return `
+          <tr class="${x.overdue ? "overdue" : ""}">
+            <td><strong>${escapeHtml(x.c.nome)}</strong></td>
+            <td class="muted">${escapeHtml(x.c.parceiro||"-")}</td>
+            <td class="muted">${escapeHtml(x.c.processo||"-")}</td>
+            <td><strong>${escapeHtml(x.p.label || `${x.p.numero||""} de ${x.p.total||""}`)}</strong></td>
+            <td>${escapeHtml(x.p.vencimento||"-")}</td>
+            <td>${status}</td>
+            <td class="right"><strong>${brl(x.p.valor)}</strong></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ==========================================
+    // EXPORTAR
+    // ==========================================
+    el("btnExportCSV").addEventListener("click", exportCSV);
+    el("btnBackupJSON").addEventListener("click", backupJSON);
+    el("btnImportJSON").addEventListener("click", importJSON);
+
+    function exportCSV(){
+      const db = loadDB();
+      const headers = [
+        "CLIENTE","ESCRITÓRIO PARCEIRO","NÚMERO DO PROCESSO","DATA PROTOCOLO","OBS AÇÃO",
+        "PARCELA_N","PARCELA_TOTAL","PARCELA",
+        "VALOR","VENCIMENTO","STATUS","DATA PAGAMENTO","OBS PARCELA"
+      ];
+      const rows = [headers];
+
+      db.forEach(c=>{
+        if(!(c.parcelas||[]).length){
+          rows.push([c.nome,c.parceiro,c.processo,c.protocolo,c.obs,"","","","","","","",""]);
+        }else{
+          (c.parcelas||[]).forEach(p=>{
+            rows.push([
+              c.nome, c.parceiro, c.processo, c.protocolo, c.obs,
+              String(p.numero ?? ""), String(p.total ?? ""), (p.label ?? ""),
+              String(p.valor ?? ""), p.vencimento ?? "", p.status ?? "", p.pagamento ?? "", p.obs ?? ""
+            ]);
+          });
+        }
+      });
+
+      const csv = rows.map(r => r.map(v=>{
+        const s = String(v ?? "");
+        const needs = /[;"\n\r]/.test(s);
+        const esc = s.replaceAll('"','""');
+        return needs ? `"${esc}"` : esc;
+      }).join(";")).join("\r\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      downloadBlob(blob, `PB-controle-recebimentos_${todayISO()}.csv`);
+    }
+
+    function backupJSON(){
+      const db = loadDB();
+      const blob = new Blob([JSON.stringify(db,null,2)], {type:"application/json"});
+      downloadBlob(blob, `PB-backup_${todayISO()}.json`);
+    }
+
+    function importJSON(){
+      const file = el("importFile").files[0];
+      if(!file) return alert("Selecione um arquivo .json primeiro.");
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(reader.result);
+          if(!Array.isArray(data)) throw new Error("Formato inválido.");
+          saveDB(data);
+          alert("Importado com sucesso!");
+          renderAll();
+        }catch(e){
+          alert("Não consegui importar. Verifique se é um backup JSON do sistema.");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    // ==========================================
+    // RENDER ALL
+    // ==========================================
+    function renderAll(){
+      refreshClienteSelect();
+      renderAlertas();
+      renderClientesLista();
+      renderDashboardKPIs();
+      renderDashboardLista();
+      renderMensal();
+    }
+
+    // Init mensal
+    initMensalSelects();
+
+    // First render
+    renderAll();
+  </script>
+</body>
+</html>
