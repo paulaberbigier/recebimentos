@@ -28,7 +28,6 @@
       background: var(--bg);
       color: var(--text);
     }
-
     .topbar{
       background: linear-gradient(90deg, var(--navy), #073146);
       color:#fff;
@@ -58,7 +57,7 @@
       padding:10px 14px;
       border-radius: 999px;
       cursor:pointer;
-      font-weight:800;
+      font-weight:900;
       transition: .15s ease;
       display:flex;
       align-items:center;
@@ -273,6 +272,22 @@
       background: rgba(10,61,90,.08);
       border-color: rgba(10,61,90,.22);
     }
+
+    .top-status{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-left:auto;
+    }
+    .status-dot{
+      width:10px;height:10px;border-radius:999px;
+      background: #9CA3AF;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.18) inset;
+    }
+    .status-dot.ok{ background: var(--ok); }
+    .status-dot.warn{ background: var(--warn); }
+    .status-dot.bad{ background: var(--danger); }
+    .status-text{ font-size:12px; opacity:.9; }
   </style>
 </head>
 
@@ -285,6 +300,11 @@
           <div class="t1">Controle de Recebimentos</div>
           <div class="t2">Paula Berbigier • Advocacia Previdenciária</div>
         </div>
+      </div>
+
+      <div class="top-status">
+        <span id="apiDot" class="status-dot"></span>
+        <span id="apiText" class="status-text">Carregando…</span>
       </div>
 
       <nav class="tabs">
@@ -347,7 +367,7 @@
           </div>
 
           <div class="footer-note">
-            Os dados ficam salvos no seu computador (neste navegador). Para trocar de PC, use “Exportar”.
+            Dados ficam salvos online no seu Google Drive (Sheets) via Apps Script.
           </div>
         </div>
 
@@ -448,13 +468,13 @@
           <div class="kpi"><div class="t">Total pago</div><div class="v" id="kpiPago">R$ 0,00</div></div>
           <div class="kpi"><div class="t">Total em aberto</div><div class="v" id="kpiAberto">R$ 0,00</div></div>
           <div class="kpi"><div class="t">Total vencido</div><div class="v" id="kpiVencido">R$ 0,00</div></div>
-          <div class="kpi"><div class="t">Saldo esperado (aberto + vencido)</div><div class="v" id="kpiEsperado">R$ 0,00</div></div>
+          <div class="kpi"><div class="t">Saldo esperado</div><div class="v" id="kpiEsperado">R$ 0,00</div></div>
         </div>
 
         <div class="row" style="margin-top:10px;">
           <div class="field" style="flex:2; min-width: 260px;">
             <label>Buscar cliente</label>
-            <input id="dashBusca" placeholder="Ex.: Edmundo / Claudia / nº processo..." />
+            <input id="dashBusca" placeholder="Ex.: Claudia / nº processo..." />
           </div>
         </div>
 
@@ -522,14 +542,10 @@
           <button class="btn btn-ghost" id="btnBackupJSON">Baixar backup (JSON)</button>
         </div>
 
-        <div class="footer-note">
-          CSV inclui campos tabulados: <strong>PARCELA_N</strong>, <strong>PARCELA_TOTAL</strong>, <strong>PARCELA</strong> (“n de X”).
-        </div>
-
         <hr style="border:none; border-top:1px solid var(--line); margin:14px 0;">
 
         <h2>Importar backup (JSON)</h2>
-        <div class="sub">Para restaurar em outro computador.</div>
+        <div class="sub">Restaura o banco inteiro (também salva no Google Sheets).</div>
         <input id="importFile" type="file" accept=".json" />
         <div class="actions">
           <button class="btn btn-accent" id="btnImportJSON">Importar JSON</button>
@@ -539,52 +555,112 @@
   </main>
 
   <script>
-    <script>
-const DRIVE_API_URL = "https://script.google.com/macros/s/AKfycbzZ_MAH7pV0tvXXor7WcVQzKDz49EWHkSOeZ1xCHDVO-XD2zd8fjJTVwAOzm7SchhieGA/exec";
+    /*************************************************************
+     * CONFIG — COLE A URL DO SEU WEB APP AQUI
+     *************************************************************/
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxh2hZUF9CGl05qTSEyQ8GnuRrH0_LK0wmLJuCS-UCDf1xL8Vjs7m8MBfJyXWqzIj-K/exec";
 
-/**
- * Envia os dados para sua planilha via Apps Script.
- * Usa sendBeacon/fetch no-cors para não travar por CORS.
- */
-function salvarNoDrive(payload) {
-  const body = JSON.stringify(payload);
+    /*************************************************************
+     * FALLBACK LOCAL (se a API estiver fora do ar, não te trava)
+     *************************************************************/
+    const LOCAL_FALLBACK_KEY = "pb_recebimentos_fallback_v1";
 
-  // Tenta sendBeacon (melhor para enviar sem bloquear)
-  if (navigator.sendBeacon) {
-    const ok = navigator.sendBeacon(
-      DRIVE_API_URL,
-      new Blob([body], { type: "application/json" })
-    );
-    return ok;
-  }
-
-  // Fallback: fetch sem ler resposta (evita CORS)
-  fetch(DRIVE_API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body
-  });
-
-  return true;
-}
-</script>
-    // ==========================================
-    // STORAGE
-    // ==========================================
-    const STORAGE_KEY = "pb_recebimentos_v4";
-
-    function loadDB(){
-      try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    function localLoad(){
+      try { return JSON.parse(localStorage.getItem(LOCAL_FALLBACK_KEY) || "[]"); }
       catch(e){ return []; }
     }
-    function saveDB(data){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    function localSave(db){
+      localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(db));
     }
 
-    // ==========================================
-    // UTILS
-    // ==========================================
+    /*************************************************************
+     * API (Google Apps Script)
+     *************************************************************/
+    async function apiPost(payload){
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        body: JSON.stringify(payload)
+      });
+      // Apps Script retorna JSON no body:
+      const txt = await res.text();
+      try { return JSON.parse(txt); } catch(e){ return { ok:false, error:"Resposta inválida: " + txt }; }
+    }
+
+    async function apiGetState(){
+      return apiPost({ action: "getState" });
+    }
+
+    async function apiSetState(db, log){
+      return apiPost({ action: "setState", db, log: log || null });
+    }
+
+    function setApiStatus(kind, text){
+      const dot = document.getElementById("apiDot");
+      const t = document.getElementById("apiText");
+      dot.classList.remove("ok","warn","bad");
+      if(kind==="ok") dot.classList.add("ok");
+      if(kind==="warn") dot.classList.add("warn");
+      if(kind==="bad") dot.classList.add("bad");
+      t.textContent = text;
+    }
+
+    /*************************************************************
+     * DB em memória (fonte de verdade do app)
+     *************************************************************/
+    let DB = [];
+    let saveTimer = null;
+
+    async function loadInitialDB(){
+      // tenta API
+      if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("COLE_AQUI")){
+        setApiStatus("warn","Defina a URL do Web App");
+        DB = localLoad();
+        renderAll();
+        return;
+      }
+
+      try{
+        setApiStatus("warn","Conectando ao Google…");
+        const r = await apiGetState();
+        if(r && r.ok){
+          DB = Array.isArray(r.db) ? r.db : [];
+          localSave(DB); // espelha local
+          setApiStatus("ok","Online (Google Sheets)");
+        }else{
+          DB = localLoad();
+          setApiStatus("bad","Offline (usando fallback local)");
+        }
+      }catch(e){
+        DB = localLoad();
+        setApiStatus("bad","Offline (usando fallback local)");
+      }
+      renderAll();
+    }
+
+    // salva com debounce (evita várias chamadas)
+    function scheduleSave(log){
+      localSave(DB); // sempre salva fallback
+      if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("COLE_AQUI")) return;
+
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(async ()=>{
+        try{
+          const r = await apiSetState(DB, log || null);
+          if(r && r.ok){
+            setApiStatus("ok","Online (Google Sheets)");
+          }else{
+            setApiStatus("bad","Falha ao salvar (fallback local ativo)");
+          }
+        }catch(e){
+          setApiStatus("bad","Falha ao salvar (fallback local ativo)");
+        }
+      }, 350);
+    }
+
+    /*************************************************************
+     * UTILS
+     *************************************************************/
     const el = (id)=>document.getElementById(id);
     const todayISO = ()=> new Date().toISOString().slice(0,10);
 
@@ -620,6 +696,11 @@ function salvarNoDrive(payload) {
       a.remove();
       URL.revokeObjectURL(url);
     }
+    function uuid(){
+      // fallback simples caso crypto não esteja disponível em algum ambiente
+      if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return "id-" + Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+    }
 
     function clienteMatches(c, q){
       if(!q) return true;
@@ -637,20 +718,19 @@ function salvarNoDrive(payload) {
       return { pago, vencido, aberto, esperado, qtdVencidas, qtdAbertas };
     }
 
-    // ==========================================
-    // UI STATE
-    // ==========================================
+    /*************************************************************
+     * UI STATE
+     *************************************************************/
     const uiState = {
-      parcelaSort: {}, // { [clienteId]: { dir: "asc"|"desc" } }
+      parcelaSort: {},
       editClient: new Set(),
       editParcela: new Set()
     };
 
-    function setSortParcelas(clienteId, dir){
+    window.setSortParcelas = function(clienteId, dir){
       uiState.parcelaSort[clienteId] = { dir };
       renderAll();
     }
-    window.setSortParcelas = setSortParcelas;
 
     function sortParcelas(clienteId, parcelas){
       const dir = uiState.parcelaSort[clienteId]?.dir || "asc";
@@ -663,9 +743,9 @@ function salvarNoDrive(payload) {
       return arr;
     }
 
-    // ==========================================
-    // TABS
-    // ==========================================
+    /*************************************************************
+     * TABS
+     *************************************************************/
     document.querySelectorAll(".tab-btn").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
@@ -676,9 +756,9 @@ function salvarNoDrive(payload) {
       });
     });
 
-    // ==========================================
-    // CLIENTE: ADD / EDIT INLINE / DELETE
-    // ==========================================
+    /*************************************************************
+     * CLIENTES
+     *************************************************************/
     function limparClienteForm(){
       ["c_nome","c_parceiro","c_processo","c_protocolo","c_obs"].forEach(id=>el(id).value="");
     }
@@ -687,8 +767,9 @@ function salvarNoDrive(payload) {
     el("btnAddCliente").addEventListener("click", ()=>{
       const nome = el("c_nome").value.trim();
       if(!nome) return alert("Informe o nome do cliente.");
+
       const cliente = {
-        id: crypto.randomUUID(),
+        id: uuid(),
         nome,
         parceiro: el("c_parceiro").value.trim(),
         processo: el("c_processo").value.trim(),
@@ -698,23 +779,32 @@ function salvarNoDrive(payload) {
         totalParcelas: null,
         parcelas: []
       };
-      const db = loadDB();
-      db.unshift(cliente);
-      saveDB(db);
+
+      DB.unshift(cliente);
+
+      scheduleSave({
+        tipo: "cliente",
+        evento: "criar",
+        clienteId: cliente.id,
+        cliente: cliente.nome,
+        parceiro: cliente.parceiro,
+        processo: cliente.processo,
+        protocolo: cliente.protocolo,
+        obsCliente: cliente.obs
+      });
+
       limparClienteForm();
       renderAll();
     });
 
-    function toggleEditCliente(clienteId, on){
+    window.toggleEditCliente = function(clienteId, on){
       if(on) uiState.editClient.add(clienteId);
       else uiState.editClient.delete(clienteId);
       renderAll();
     }
-    window.toggleEditCliente = toggleEditCliente;
 
-    function saveEditCliente(clienteId){
-      const db = loadDB();
-      const c = db.find(x=>x.id===clienteId);
+    window.saveEditCliente = function(clienteId){
+      const c = DB.find(x=>x.id===clienteId);
       if(!c) return;
 
       const nome = el(`ec_nome_${clienteId}`).value.trim();
@@ -726,24 +816,41 @@ function salvarNoDrive(payload) {
       c.protocolo = el(`ec_protocolo_${clienteId}`).value;
       c.obs = el(`ec_obs_${clienteId}`).value.trim();
 
-      saveDB(db);
+      scheduleSave({
+        tipo: "cliente",
+        evento: "editar",
+        clienteId: c.id,
+        cliente: c.nome,
+        parceiro: c.parceiro,
+        processo: c.processo,
+        protocolo: c.protocolo,
+        obsCliente: c.obs
+      });
+
       uiState.editClient.delete(clienteId);
       renderAll();
     }
-    window.saveEditCliente = saveEditCliente;
 
-    function excluirCliente(clienteId){
+    window.excluirCliente = function(clienteId){
       if(!confirm("Excluir cliente e todas as parcelas?")) return;
-      const db = loadDB().filter(c=>c.id!==clienteId);
-      saveDB(db);
+      const c = DB.find(x=>x.id===clienteId);
+
+      DB = DB.filter(x=>x.id!==clienteId);
+
+      scheduleSave({
+        tipo: "cliente",
+        evento: "excluir",
+        clienteId: clienteId,
+        cliente: c?.nome || ""
+      });
+
       uiState.editClient.delete(clienteId);
       renderAll();
     }
-    window.excluirCliente = excluirCliente;
 
-    // ==========================================
-    // PARCELAS: GERAR COMPLETO / EDIT INLINE / DELETE
-    // ==========================================
+    /*************************************************************
+     * PARCELAS
+     *************************************************************/
     function limparParcelaForm(){
       ["p_total","p_venc","p_valor","p_obs"].forEach(id=>el(id).value="");
       el("p_modo").value = "completo";
@@ -769,8 +876,8 @@ function salvarNoDrive(payload) {
       const clienteId = el("p_cliente").value;
       if(!clienteId) return alert("Selecione um cliente.");
 
-      const modo = el("p_modo").value; // completo | unica
-      const intervalo = el("p_intervalo").value; // mensal | quinzenal | semanal
+      const modo = el("p_modo").value;
+      const intervalo = el("p_intervalo").value;
 
       const total = Number(el("p_total").value);
       const venc0 = el("p_venc").value;
@@ -781,23 +888,20 @@ function salvarNoDrive(payload) {
       if(!venc0) return alert("Informe o primeiro vencimento.");
       if(!valor || valor <= 0) return alert("Informe um valor válido.");
 
-      const db = loadDB();
-      const c = db.find(x=>x.id===clienteId);
+      const c = DB.find(x=>x.id===clienteId);
       if(!c) return alert("Cliente não encontrado.");
 
       c.totalParcelas = total;
 
-      // se já existirem parcelas, continua a numeração
       const numerosExistentes = (c.parcelas||[])
         .map(p=>Number(p.numero)||0)
         .filter(n=>n>0);
-
       const startNumero = numerosExistentes.length ? Math.max(...numerosExistentes) + 1 : 1;
 
       if(modo === "unica"){
         const numero = startNumero;
-        c.parcelas.push({
-          id: crypto.randomUUID(),
+        const p = {
+          id: uuid(),
           numero,
           total,
           label: `${numero} de ${total}`,
@@ -806,14 +910,36 @@ function salvarNoDrive(payload) {
           status: "EM ABERTO",
           pagamento: "",
           obs
+        };
+        c.parcelas.push(p);
+
+        scheduleSave({
+          tipo: "parcela",
+          evento: "criar_unica",
+          clienteId: c.id,
+          cliente: c.nome,
+          parceiro: c.parceiro,
+          processo: c.processo,
+          protocolo: c.protocolo,
+          obsCliente: c.obs,
+          parcelaId: p.id,
+          parcelaNumero: p.numero,
+          parcelaTotal: p.total,
+          parcelaLabel: p.label,
+          vencimento: p.vencimento,
+          valor: p.valor,
+          status: p.status,
+          pagamento: p.pagamento,
+          obsParcela: p.obs
         });
-      }else{
+
+      } else {
         // gera do startNumero até total
         for(let i = startNumero; i <= total; i++){
           const step = (i - startNumero);
           const venc = addByInterval(venc0, step, intervalo);
-          c.parcelas.push({
-            id: crypto.randomUUID(),
+          const p = {
+            id: uuid(),
             numero: i,
             total,
             label: `${i} de ${total}`,
@@ -822,25 +948,47 @@ function salvarNoDrive(payload) {
             status: "EM ABERTO",
             pagamento: "",
             obs
+          };
+          c.parcelas.push(p);
+
+          // log por parcela (para auditoria)
+          scheduleSave({
+            tipo: "parcela",
+            evento: "criar",
+            clienteId: c.id,
+            cliente: c.nome,
+            parceiro: c.parceiro,
+            processo: c.processo,
+            protocolo: c.protocolo,
+            obsCliente: c.obs,
+            parcelaId: p.id,
+            parcelaNumero: p.numero,
+            parcelaTotal: p.total,
+            parcelaLabel: p.label,
+            vencimento: p.vencimento,
+            valor: p.valor,
+            status: p.status,
+            pagamento: p.pagamento,
+            obsParcela: p.obs
           });
         }
       }
 
-      saveDB(db);
+      // garante persistência do estado completo (já no debounce)
+      scheduleSave({ tipo:"sistema", evento:"salvar_estado" });
+
       limparParcelaForm();
       renderAll();
     });
 
-    function toggleEditParcela(parcelaId, on){
+    window.toggleEditParcela = function(parcelaId, on){
       if(on) uiState.editParcela.add(parcelaId);
       else uiState.editParcela.delete(parcelaId);
       renderAll();
     }
-    window.toggleEditParcela = toggleEditParcela;
 
-    function saveEditParcela(clienteId, parcelaId){
-      const db = loadDB();
-      const c = db.find(x=>x.id===clienteId);
+    window.saveEditParcela = function(clienteId, parcelaId){
+      const c = DB.find(x=>x.id===clienteId);
       if(!c) return;
       const p = (c.parcelas||[]).find(x=>x.id===parcelaId);
       if(!p) return;
@@ -873,44 +1021,87 @@ function salvarNoDrive(payload) {
 
       c.totalParcelas = total;
 
-      saveDB(db);
+      scheduleSave({
+        tipo: "parcela",
+        evento: "editar",
+        clienteId: c.id,
+        cliente: c.nome,
+        parceiro: c.parceiro,
+        processo: c.processo,
+        protocolo: c.protocolo,
+        obsCliente: c.obs,
+        parcelaId: p.id,
+        parcelaNumero: p.numero,
+        parcelaTotal: p.total,
+        parcelaLabel: p.label,
+        vencimento: p.vencimento,
+        valor: p.valor,
+        status: p.status,
+        pagamento: p.pagamento,
+        obsParcela: p.obs
+      });
+
       uiState.editParcela.delete(parcelaId);
       renderAll();
     }
-    window.saveEditParcela = saveEditParcela;
 
-    function excluirParcela(clienteId, parcelaId){
+    window.excluirParcela = function(clienteId, parcelaId){
       if(!confirm("Excluir esta parcela?")) return;
-      const db = loadDB();
-      const c = db.find(x=>x.id===clienteId);
+      const c = DB.find(x=>x.id===clienteId);
       if(!c) return;
-      c.parcelas = (c.parcelas||[]).filter(p=>p.id!==parcelaId);
-      saveDB(db);
+      const p = (c.parcelas||[]).find(x=>x.id===parcelaId);
+
+      c.parcelas = (c.parcelas||[]).filter(pp=>pp.id!==parcelaId);
+
+      scheduleSave({
+        tipo: "parcela",
+        evento: "excluir",
+        clienteId: c.id,
+        cliente: c.nome,
+        parcelaId: parcelaId,
+        parcelaNumero: p?.numero,
+        parcelaTotal: p?.total,
+        parcelaLabel: p?.label
+      });
+
       uiState.editParcela.delete(parcelaId);
       renderAll();
     }
-    window.excluirParcela = excluirParcela;
 
-    function marcarPago(clienteId, parcelaId){
-      const db = loadDB();
-      const c = db.find(x=>x.id===clienteId);
+    window.marcarPago = function(clienteId, parcelaId){
+      const c = DB.find(x=>x.id===clienteId);
       if(!c) return;
       const p = (c.parcelas||[]).find(x=>x.id===parcelaId);
       if(!p) return;
+
       p.status = "PAGO";
       p.pagamento = todayISO();
-      saveDB(db);
+
+      scheduleSave({
+        tipo: "parcela",
+        evento: "marcar_pago",
+        clienteId: c.id,
+        cliente: c.nome,
+        parcelaId: p.id,
+        parcelaNumero: p.numero,
+        parcelaTotal: p.total,
+        parcelaLabel: p.label,
+        vencimento: p.vencimento,
+        valor: p.valor,
+        status: p.status,
+        pagamento: p.pagamento,
+        obsParcela: p.obs
+      });
+
       renderAll();
     }
-    window.marcarPago = marcarPago;
 
-    // ==========================================
-    // ALERTAS
-    // ==========================================
+    /*************************************************************
+     * ALERTAS
+     *************************************************************/
     function renderAlertas(){
-      const db = loadDB();
       let vencidas = 0, totalVencido = 0;
-      db.forEach(c=>{
+      DB.forEach(c=>{
         (c.parcelas||[]).forEach(p=>{
           if(isOverdue(p)){ vencidas++; totalVencido += Number(p.valor)||0; }
         });
@@ -925,34 +1116,32 @@ function salvarNoDrive(payload) {
       }
     }
 
-    // ==========================================
-    // SELECT CLIENTES
-    // ==========================================
+    /*************************************************************
+     * SELECT CLIENTES
+     *************************************************************/
     function refreshClienteSelect(){
-      const db = loadDB();
       const sel = el("p_cliente");
-      sel.innerHTML = `<option value="">Selecione...</option>` + db.map(c=>{
+      sel.innerHTML = `<option value="">Selecione...</option>` + DB.map(c=>{
         const label = `${c.nome}${c.processo ? " — " + c.processo : ""}`;
         return `<option value="${c.id}">${escapeHtml(label)}</option>`;
       }).join("");
     }
 
-    // ==========================================
-    // FILTROS / BUSCAS
-    // ==========================================
+    /*************************************************************
+     * FILTROS / BUSCAS
+     *************************************************************/
     el("busca").addEventListener("input", ()=>renderClientesLista());
     el("filtro").addEventListener("change", ()=>renderClientesLista());
     el("dashBusca").addEventListener("input", ()=>renderDashboardLista());
 
-    // ==========================================
-    // CLIENTES LISTA
-    // ==========================================
+    /*************************************************************
+     * CLIENTES LISTA
+     *************************************************************/
     function renderClientesLista(){
-      const db = loadDB();
       const q = (el("busca").value||"").trim().toLowerCase();
       const filtro = el("filtro").value;
 
-      const lista = db
+      const lista = DB
         .filter(c=>clienteMatches(c,q))
         .filter(c=>{
           const info = getClienteStatusInfo(c);
@@ -1037,7 +1226,7 @@ function salvarNoDrive(payload) {
               <div class="kpi"><div class="t">Pago</div><div class="v">${brl(info.pago)}</div></div>
               <div class="kpi"><div class="t">Em aberto</div><div class="v">${brl(info.aberto)}</div></div>
               <div class="kpi"><div class="t">Vencido</div><div class="v">${brl(info.vencido)}</div></div>
-              <div class="kpi"><div class="t">Total (tudo)</div><div class="v">${brl(info.pago + info.aberto + info.vencido)}</div></div>
+              <div class="kpi"><div class="t">Total</div><div class="v">${brl(info.pago + info.aberto + info.vencido)}</div></div>
             </div>
 
             <div style="margin-top:12px;">
@@ -1132,8 +1321,7 @@ function salvarNoDrive(payload) {
       }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
 
       // pós-render: aplica o status nos selects editáveis
-      const db2 = loadDB();
-      db2.forEach(c=>{
+      DB.forEach(c=>{
         (c.parcelas||[]).forEach(p=>{
           if(uiState.editParcela.has(p.id)){
             const s = el(`ep_status_${p.id}`);
@@ -1143,13 +1331,12 @@ function salvarNoDrive(payload) {
       });
     }
 
-    // ==========================================
-    // DASHBOARD
-    // ==========================================
+    /*************************************************************
+     * DASHBOARD
+     *************************************************************/
     function renderDashboardKPIs(){
-      const db = loadDB();
       let pago=0, aberto=0, vencido=0;
-      db.forEach(c=>{
+      DB.forEach(c=>{
         const info = getClienteStatusInfo(c);
         pago += info.pago;
         aberto += info.aberto;
@@ -1162,10 +1349,9 @@ function salvarNoDrive(payload) {
     }
 
     function renderDashboardLista(){
-      const db = loadDB();
       const q = (el("dashBusca").value||"").trim().toLowerCase();
 
-      const lista = db
+      const lista = DB
         .filter(c=>clienteMatches(c,q))
         .map(c=>{
           const info = getClienteStatusInfo(c);
@@ -1203,9 +1389,9 @@ function salvarNoDrive(payload) {
       }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
     }
 
-    // ==========================================
-    // VISÃO MENSAL
-    // ==========================================
+    /*************************************************************
+     * VISÃO MENSAL
+     *************************************************************/
     function initMensalSelects(){
       const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
       el("m_mes").innerHTML = meses.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
@@ -1222,13 +1408,12 @@ function salvarNoDrive(payload) {
     }
 
     function renderMensal(){
-      const db = loadDB();
       const mes = Number(el("m_mes").value);
       const ano = Number(el("m_ano").value);
       const filtro = el("m_filtro").value;
 
       const itens = [];
-      db.forEach(c=>{
+      DB.forEach(c=>{
         (c.parcelas||[]).forEach(p=>{
           const d = parseISO(p.vencimento);
           if(!d) return;
@@ -1283,15 +1468,14 @@ function salvarNoDrive(payload) {
       }).join("");
     }
 
-    // ==========================================
-    // EXPORTAR
-    // ==========================================
+    /*************************************************************
+     * EXPORTAR / IMPORTAR
+     *************************************************************/
     el("btnExportCSV").addEventListener("click", exportCSV);
     el("btnBackupJSON").addEventListener("click", backupJSON);
     el("btnImportJSON").addEventListener("click", importJSON);
 
     function exportCSV(){
-      const db = loadDB();
       const headers = [
         "CLIENTE","ESCRITÓRIO PARCEIRO","NÚMERO DO PROCESSO","DATA PROTOCOLO","OBS AÇÃO",
         "PARCELA_N","PARCELA_TOTAL","PARCELA",
@@ -1299,7 +1483,7 @@ function salvarNoDrive(payload) {
       ];
       const rows = [headers];
 
-      db.forEach(c=>{
+      DB.forEach(c=>{
         if(!(c.parcelas||[]).length){
           rows.push([c.nome,c.parceiro,c.processo,c.protocolo,c.obs,"","","","","","","",""]);
         }else{
@@ -1325,8 +1509,7 @@ function salvarNoDrive(payload) {
     }
 
     function backupJSON(){
-      const db = loadDB();
-      const blob = new Blob([JSON.stringify(db,null,2)], {type:"application/json"});
+      const blob = new Blob([JSON.stringify(DB,null,2)], {type:"application/json"});
       downloadBlob(blob, `PB-backup_${todayISO()}.json`);
     }
 
@@ -1339,7 +1522,8 @@ function salvarNoDrive(payload) {
         try{
           const data = JSON.parse(reader.result);
           if(!Array.isArray(data)) throw new Error("Formato inválido.");
-          saveDB(data);
+          DB = data;
+          scheduleSave({ tipo:"sistema", evento:"import_json" });
           alert("Importado com sucesso!");
           renderAll();
         }catch(e){
@@ -1349,9 +1533,17 @@ function salvarNoDrive(payload) {
       reader.readAsText(file, "utf-8");
     }
 
-    // ==========================================
-    // RENDER ALL
-    // ==========================================
+    /*************************************************************
+     * RENDER ALL
+     *************************************************************/
+    function refreshClienteSelect(){
+      const sel = el("p_cliente");
+      sel.innerHTML = `<option value="">Selecione...</option>` + DB.map(c=>{
+        const label = `${c.nome}${c.processo ? " — " + c.processo : ""}`;
+        return `<option value="${c.id}">${escapeHtml(label)}</option>`;
+      }).join("");
+    }
+
     function renderAll(){
       refreshClienteSelect();
       renderAlertas();
@@ -1361,12 +1553,11 @@ function salvarNoDrive(payload) {
       renderMensal();
     }
 
-    // Init mensal
+    // Init selects mensal
     initMensalSelects();
 
-    // First render
-    renderAll();
+    // Start
+    loadInitialDB();
   </script>
 </body>
-
 </html>
