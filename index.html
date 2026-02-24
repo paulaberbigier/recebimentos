@@ -64,7 +64,32 @@
       gap:8px;
       white-space: nowrap;
     }
-    .tab-btn:hover{ background: rgba(255,255,255,.12); }
+    .tab-btn:hover{ background: rgba(255,255,255,.12); }<div class="row" style="margin-top:10px;">
+  <div class="field" style="flex:2; min-width: 260px;">
+    <label>Buscar cliente</label>
+    <input id="dashBusca" placeholder="Ex.: Claudia / nº processo..." />
+  </div>
+
+  <div class="field" style="min-width: 220px;">
+    <label>Filtro</label>
+    <select id="dashFiltro">
+      <option value="todos">Todos</option>
+      <option value="comVencidos">Com parcelas vencidas</option>
+      <option value="comAbertos">Com parcelas em aberto</option>
+      <option value="soPagos">Somente pagos</option>
+    </select>
+  </div>
+
+  <div class="field" style="min-width: 220px;">
+    <label>Mês</label>
+    <select id="dashMes"></select>
+  </div>
+
+  <div class="field" style="min-width: 180px;">
+    <label>Ano</label>
+    <select id="dashAno"></select>
+  </div>
+</div>
     .tab-btn.active{ background:#fff; color: var(--navy); border-color:#fff; }
     .dot{ width:8px;height:8px;border-radius:50%; background: var(--orange); }
 
@@ -472,12 +497,31 @@
         </div>
 
         <div class="row" style="margin-top:10px;">
-          <div class="field" style="flex:2; min-width: 260px;">
-            <label>Buscar cliente</label>
-            <input id="dashBusca" placeholder="Ex.: Claudia / nº processo..." />
-          </div>
-        </div>
+  <div class="field" style="flex:2; min-width: 260px;">
+    <label>Buscar cliente</label>
+    <input id="dashBusca" placeholder="Ex.: Claudia / nº processo..." />
+  </div>
 
+  <div class="field" style="min-width: 220px;">
+    <label>Filtro</label>
+    <select id="dashFiltro">
+      <option value="todos">Todos</option>
+      <option value="comVencidos">Com parcelas vencidas</option>
+      <option value="comAbertos">Com parcelas em aberto</option>
+      <option value="soPagos">Somente pagos</option>
+    </select>
+  </div>
+
+  <div class="field" style="min-width: 220px;">
+    <label>Mês</label>
+    <select id="dashMes"></select>
+  </div>
+
+  <div class="field" style="min-width: 180px;">
+    <label>Ano</label>
+    <select id="dashAno"></select>
+  </div>
+</div>
         <div id="dashLista"></div>
       </div>
     </section>
@@ -1561,3 +1605,4 @@
   </script>
 </body>
 </html>
+
