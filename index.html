@@ -1392,46 +1392,80 @@
       el("kpiEsperado").textContent = brl(aberto + vencido);
     }
 
-    function renderDashboardLista(){
-      const q = (el("dashBusca").value||"").trim().toLowerCase();
+   function filterParcelasByMesAno(parcelas, mes, ano){
+  if(!mes || !ano) return parcelas || [];
+  return (parcelas || []).filter(p=>{
+    const d = parseISO(p.vencimento);
+    if(!d) return false;
+    return (d.getMonth()+1) === mes && d.getFullYear() === ano;
+  });
+}
 
-      const lista = DB
-        .filter(c=>clienteMatches(c,q))
-        .map(c=>{
-          const info = getClienteStatusInfo(c);
-          return { c, info, total: info.pago + info.aberto + info.vencido };
-        })
-        .sort((a,b)=> b.total - a.total);
+function renderDashboardLista(){
+  const q = (el("dashBusca").value||"").trim().toLowerCase();
+  const filtro = el("dashFiltro") ? el("dashFiltro").value : "todos";
 
-      el("dashLista").innerHTML = lista.map(({c,info,total})=>{
-        const tag = info.qtdVencidas>0
-          ? `<span class="pill danger"><span class="b"></span>${info.qtdVencidas} vencida(s)</span>`
-          : info.qtdAbertas>0
-            ? `<span class="pill warn"><span class="b"></span>${info.qtdAbertas} em aberto</span>`
-            : `<span class="pill ok"><span class="b"></span>Em dia</span>`;
+  const mesVal = el("dashMes") ? el("dashMes").value : "";
+  const anoVal = el("dashAno") ? el("dashAno").value : "";
+  const mes = mesVal ? Number(mesVal) : null;
+  const ano = anoVal ? Number(anoVal) : null;
 
-        return `
-          <div class="client-card">
-            <div class="client-head">
-              <div>
-                <div class="client-name">${escapeHtml(c.nome)}</div>
-                <div class="client-meta">
-                  <div><strong>Parceiro:</strong> ${escapeHtml(c.parceiro||"-")} • <strong>Processo:</strong> ${escapeHtml(c.processo||"-")}</div>
-                </div>
-              </div>
-              <div class="client-actions">${tag}</div>
-            </div>
+  const lista = DB
+    .filter(c=>clienteMatches(c,q))
+    .map(c=>{
+      const parcelasFiltradas = filterParcelasByMesAno(c.parcelas, mes, ano);
 
-            <div class="kpis" style="grid-template-columns: repeat(4, 1fr); margin-top:10px;">
-              <div class="kpi"><div class="t">Pago</div><div class="v">${brl(info.pago)}</div></div>
-              <div class="kpi"><div class="t">Em aberto</div><div class="v">${brl(info.aberto)}</div></div>
-              <div class="kpi"><div class="t">Vencido</div><div class="v">${brl(info.vencido)}</div></div>
-              <div class="kpi"><div class="t">Total</div><div class="v">${brl(total)}</div></div>
+      const pago = sumParcelas(parcelasFiltradas, p=>p.status==="PAGO");
+      const vencido = sumParcelas(parcelasFiltradas, p=>isOverdue(p));
+      const aberto = sumParcelas(parcelasFiltradas, p=>p.status!=="PAGO" && !isOverdue(p));
+      const esperado = aberto + vencido;
+
+      const qtdVencidas = parcelasFiltradas.filter(p=>isOverdue(p)).length;
+      const qtdAbertas = parcelasFiltradas.filter(p=>p.status!=="PAGO").length;
+
+      const info = { pago, vencido, aberto, esperado, qtdVencidas, qtdAbertas };
+      const total = pago + aberto + vencido;
+
+      return { c, info, total, parcelasCount: parcelasFiltradas.length };
+    })
+    .filter(({info, parcelasCount})=>{
+      if(filtro==="todos") return true;
+      if(filtro==="comVencidos") return info.qtdVencidas > 0;
+      if(filtro==="comAbertos") return info.qtdAbertas > 0;
+      if(filtro==="soPagos") return parcelasCount>0 && info.qtdAbertas===0;
+      return true;
+    })
+    .sort((a,b)=> b.total - a.total);
+
+  el("dashLista").innerHTML = lista.map(({c,info,total})=>{
+    const tag = info.qtdVencidas>0
+      ? `<span class="pill danger"><span class="b"></span>${info.qtdVencidas} vencida(s)</span>`
+      : info.qtdAbertas>0
+        ? `<span class="pill warn"><span class="b"></span>${info.qtdAbertas} em aberto</span>`
+        : `<span class="pill ok"><span class="b"></span>Em dia</span>`;
+
+    return `
+      <div class="client-card">
+        <div class="client-head">
+          <div>
+            <div class="client-name">${escapeHtml(c.nome)}</div>
+            <div class="client-meta">
+              <div><strong>Parceiro:</strong> ${escapeHtml(c.parceiro||"-")} • <strong>Processo:</strong> ${escapeHtml(c.processo||"-")}</div>
             </div>
           </div>
-        `;
-      }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
-    }
+          <div class="client-actions">${tag}</div>
+        </div>
+
+        <div class="kpis" style="grid-template-columns: repeat(4, 1fr); margin-top:10px;">
+          <div class="kpi"><div class="t">Pago</div><div class="v">${brl(info.pago)}</div></div>
+          <div class="kpi"><div class="t">Em aberto</div><div class="v">${brl(info.aberto)}</div></div>
+          <div class="kpi"><div class="t">Vencido</div><div class="v">${brl(info.vencido)}</div></div>
+          <div class="kpi"><div class="t">Total</div><div class="v">${brl(total)}</div></div>
+        </div>
+      </div>
+    `;
+  }).join("") || `<div class="muted" style="padding:10px 0;">Nenhum cliente encontrado.</div>`;
+}
 
     /*************************************************************
      * VISÃO MENSAL
@@ -1605,4 +1639,5 @@
   </script>
 </body>
 </html>
+
 
