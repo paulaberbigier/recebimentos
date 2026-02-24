@@ -539,6 +539,36 @@
   </main>
 
   <script>
+    <script>
+const DRIVE_API_URL = "https://script.google.com/macros/s/AKfycbzZ_MAH7pV0tvXXor7WcVQzKDz49EWHkSOeZ1xCHDVO-XD2zd8fjJTVwAOzm7SchhieGA/exec";
+
+/**
+ * Envia os dados para sua planilha via Apps Script.
+ * Usa sendBeacon/fetch no-cors para não travar por CORS.
+ */
+function salvarNoDrive(payload) {
+  const body = JSON.stringify(payload);
+
+  // Tenta sendBeacon (melhor para enviar sem bloquear)
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon(
+      DRIVE_API_URL,
+      new Blob([body], { type: "application/json" })
+    );
+    return ok;
+  }
+
+  // Fallback: fetch sem ler resposta (evita CORS)
+  fetch(DRIVE_API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body
+  });
+
+  return true;
+}
+</script>
     // ==========================================
     // STORAGE
     // ==========================================
@@ -1338,4 +1368,5 @@
     renderAll();
   </script>
 </body>
+
 </html>
