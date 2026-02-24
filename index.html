@@ -1499,44 +1499,60 @@ function renderDashboardLista(){
     /*************************************************************
      * VISÃO MENSAL
      *************************************************************/
-    function initMensalSelects(){
-      const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-      el("m_mes").innerHTML = meses.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
-      const anoAtual = new Date().getFullYear();
-      const anos = [];
-      for(let y = anoAtual - 3; y <= anoAtual + 3; y++) anos.push(y);
-      el("m_ano").innerHTML = anos.map(y=>`<option value="${y}">${y}</option>`).join("");
-      el("m_mes").value = (new Date().getMonth()+1);
-      el("m_ano").value = anoAtual;
+function initMensalSelects(){
+  const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
-      ["m_mes","m_ano","m_filtro"].forEach(id=>{
-        el(id).addEventListener("change", ()=>renderMensal());
-      });
-    }
+  // Mês: inclui "Todos os meses"
+  el("m_mes").innerHTML =
+    `<option value="">Todos os meses</option>` +
+    meses.map((m,i)=>`<option value="${i+1}">${m}</option>`).join("");
+
+  // Ano: inclui "Todos os anos"
+  const anoAtual = new Date().getFullYear();
+  const anos = [];
+  for(let y = anoAtual - 3; y <= anoAtual + 3; y++) anos.push(y);
+
+  el("m_ano").innerHTML =
+    `<option value="">Todos os anos</option>` +
+    anos.map(y=>`<option value="${y}">${y}</option>`).join("");
+
+  // padrão: mês e ano atuais (pode mudar se quiser)
+  el("m_mes").value = (new Date().getMonth()+1);
+  el("m_ano").value = anoAtual;
+
+  ["m_mes","m_ano","m_filtro"].forEach(id=>{
+    el(id).addEventListener("change", ()=>renderMensal());
+  });
+}
 
     function renderMensal(){
-      const mes = Number(el("m_mes").value);
-      const ano = Number(el("m_ano").value);
-      const filtro = el("m_filtro").value;
+      const mesVal = el("m_mes").value;  // "" = todos
+const anoVal = el("m_ano").value;  // "" = todos
+const mes = mesVal ? Number(mesVal) : null;
+const ano = anoVal ? Number(anoVal) : null;
+const filtro = el("m_filtro").value;
 
-      const itens = [];
-      DB.forEach(c=>{
-        (c.parcelas||[]).forEach(p=>{
-          const d = parseISO(p.vencimento);
-          if(!d) return;
-          if((d.getMonth()+1)!==mes || d.getFullYear()!==ano) return;
+const itens = [];
+DB.forEach(c=>{
+  (c.parcelas||[]).forEach(p=>{
+    const d = parseISO(p.vencimento);
+    if(!d) return;
 
-          const overdue = isOverdue(p);
-          const aberto = (p.status!=="PAGO");
-          const pago = (p.status==="PAGO");
+    // ✅ Só filtra se mês/ano foram escolhidos
+    if(mes && (d.getMonth()+1)!==mes) return;
+    if(ano && d.getFullYear()!==ano) return;
 
-          if(filtro==="abertos" && !aberto) return;
-          if(filtro==="pagos" && !pago) return;
-          if(filtro==="vencidos" && !overdue) return;
+    const overdue = isOverdue(p);
+    const aberto = (p.status!=="PAGO");
+    const pago = (p.status==="PAGO");
 
-          itens.push({ c, p, overdue });
-        });
-      });
+    if(filtro==="abertos" && !aberto) return;
+    if(filtro==="pagos" && !pago) return;
+    if(filtro==="vencidos" && !overdue) return;
+
+    itens.push({ c, p, overdue });
+  });
+});
 
       const totalMes = itens.reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
       const abertoMes = itens.filter(x=>x.p.status!=="PAGO" && !x.overdue).reduce((acc,x)=> acc + (Number(x.p.valor)||0), 0);
@@ -1668,6 +1684,7 @@ function renderDashboardLista(){
   </script>
 </body>
 </html>
+
 
 
 
